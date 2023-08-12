@@ -6,6 +6,7 @@ import {
   Text,
   useFont,
   Rect,
+  Shadow,
 } from "@shopify/react-native-skia";
 
 import { useEffect } from "react";
@@ -71,7 +72,7 @@ const radiansToDegrees = (radians: number) => {
 };
 
 export function Game() {
-  const position = useValue(transformToScreen({ x: 0, y: 0 }));
+  const position = useValue(transformToScreen({ x: 75, y: 50 }));
 
   const paths = useValue<string[]>([
     `M ${position.current.x.toFixed(2)} ${position.current.y.toFixed(2)}`,
@@ -79,6 +80,7 @@ export function Game() {
 
   const rotateAngle = useValue(degreesToRadians(45));
   const isPressing = useValue<"right" | "left" | null>(null);
+  const gameClock = useValue(0);
 
   const font = useFont(require("./assets/Inter.ttf"), 16);
   const debugText = useValue("debug");
@@ -86,7 +88,6 @@ export function Game() {
   const deltaPos = useValue<Point>({ x: 0, y: 0 });
 
   const update = () => {
-    // rotate based on angle
     if (isPressing.current === "right") {
       rotateAngle.current += degreesToRadians(5);
     }
@@ -130,6 +131,7 @@ export function Game() {
     update();
     draw();
     drawDebug();
+    gameClock.current += 1;
   };
 
   useEffect(() => {
@@ -148,7 +150,6 @@ export function Game() {
         isPressing.current = "left";
       }
     })
-
     .onTouchesUp(() => {
       isPressing.current = null;
     });
@@ -162,19 +163,21 @@ export function Game() {
             y={GAME_AREA_Y}
             width={GAME_AREA_WIDTH + GAME_AREA_BORDER * 2}
             height={GAME_AREA_HEIGHT + GAME_AREA_BORDER * 2}
-            color={"black"}
+            color={"white"}
             style={"stroke"}
             strokeWidth={5}
           />
           <Path
             key={`path`}
             path={path}
-            color={"red"}
+            color={"cyan"}
             strokeWidth={5}
             style="stroke"
-          />
+          >
+            <Shadow dx={0} dy={0} color={"cyan"} blur={10} />
+          </Path>
 
-          <Text x={50} y={16} text={debugText} font={font} />
+          <Text x={50} y={16} text={debugText} font={font} color={"white"} />
         </Canvas>
       </GestureDetector>
     </View>
@@ -184,5 +187,6 @@ export function Game() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#121f33",
   },
 });
