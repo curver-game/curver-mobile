@@ -96,7 +96,6 @@ export function useRealUser() {
 
   return {
     position,
-
     rotateAngle,
     isPressing,
     deltaPos,

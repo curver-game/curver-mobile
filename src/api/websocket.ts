@@ -5,7 +5,7 @@ class GameWebsocket {
   constructor() {}
 
   connect() {
-    this.socket = new WebSocket("ws://192.168.41.247:8080/ws");
+    this.socket = new WebSocket("ws://192.168.1.82:8080/ws");
     this.socket.addEventListener("open", () => {
       console.log("connected");
     });

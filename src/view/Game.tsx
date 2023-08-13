@@ -8,6 +8,7 @@ import {
   Shadow,
   ImageSVG,
   Selector,
+  useComputedValue,
 } from "@shopify/react-native-skia";
 
 import { useEffect, useRef, useState } from "react";
@@ -53,14 +54,28 @@ const initialPosition = transformToScreen({ x: 75, y: 50 });
 export function GameScreen() {
   const gameState = useRef<GameState>("waiting");
   const shouldShowReady = useRef(false);
-  const playersLength = useRef(0);
+
   const forceUpdate = useForceUpdate();
+
+  const player1Position = useValue(initialPosition);
+  const player1Paths = useValue<string[]>([]);
+
+  const drawPlayer1 = () => {
+    player1Paths.current = [
+      ...player1Paths.current,
+      `L ${player1Position.current.x} ${player1Position.current.y}`,
+    ];
+  };
+
+  const player1Path = useComputedValue(() => {
+    return player1Paths.current.join(" ");
+  }, [player1Paths]);
 
   const {
     params: { roomId, userId },
   } = useRoute<RouteProp<RootStackProps, "Game">>();
 
-  const {
+  /*  const {
     position,
     rotateAngle,
     update: updateUser,
@@ -70,15 +85,9 @@ export function GameScreen() {
     headY,
     headRotation,
     path,
-  } = useRealUser();
+  } = useRealUser(); */
 
-  const {
-    playersPathStrings,
-    update: updateOthers,
-    draw: drawOthers,
-    setPlayers,
-    players,
-  } = useGameState();
+  const { gesture } = useRealUser();
 
   const gameClock = useValue(0);
 
@@ -91,12 +100,34 @@ export function GameScreen() {
     if (message.type === "update") {
       const updateMessage = message as UpdateMessage;
       gameState.current = updateMessage.gameState;
-      const playersWithoutUser = updateMessage.players.filter(
+
+      if (updateMessage.gameState === "countdown") {
+        player1Position.current = transformToScreen(updateMessage.players[0]);
+        player1Paths.current = [
+          `M ${player1Position.current.x} ${player1Position.current.y}`,
+        ];
+      }
+
+      if (updateMessage.gameState === "started") {
+        const newPos = {
+          x:
+            player1Position.current.x +
+            updateMessage.players[0].angleUnitVectorX,
+          y:
+            player1Position.current.y +
+            updateMessage.players[0].angleUnitVectorY,
+        };
+        player1Position.current = newPos;
+        console.log("newPos", player1Position.current);
+        drawPlayer1();
+      }
+
+      /*  const playersWithoutUser = updateMessage.players.filter(
         (p) => p.id !== userId
-      );
-      setPlayers(playersWithoutUser);
-      playersLength.current = playersWithoutUser.length;
-      if (players.current.length >= 2) {
+      ); */
+      /*  setPlayers(playersWithoutUser); */
+
+      if (updateMessage.players.length >= 2) {
         shouldShowReady.current = true;
       }
       forceUpdate();
@@ -118,7 +149,7 @@ export function GameScreen() {
     });
   };
 
-  const drawDebug = () => {
+  /*   const drawDebug = () => {
     const { x, y } = transformToBackend(position.current);
     const degrees = radiansToDegrees(rotateAngle.current);
     debugText.current = `
@@ -127,7 +158,7 @@ export function GameScreen() {
     backend x: ${x.toFixed(1)} backend y: ${y.toFixed(1)}
     angle: ${degrees.toFixed(1)}
     `;
-  };
+  }; */
 
   const uiLoop = (timestamp: number) => {
     requestAnimationFrame(uiLoop);
@@ -140,13 +171,13 @@ export function GameScreen() {
       return;
     }
 
-    updateUser();
+    /*   updateUser();
     updateOthers();
 
     drawUser();
-    drawOthers();
+    drawOthers(); */
 
-    drawDebug();
+    //drawDebug();
     lastTimestamp = timestamp;
     gameClock.current += 1;
   };
@@ -166,13 +197,20 @@ export function GameScreen() {
     requestAnimationFrame(serverLoop);
   }, []);
 
-  console.log("user", userId, playersLength);
-
   return (
     <View style={styles.container}>
       <GestureDetector gesture={gesture}>
         <Canvas style={[styles.container]}>
           <Rect
+            x={GAME_AREA_X}
+            y={GAME_AREA_Y}
+            width={GAME_AREA_WIDTH + GAME_AREA_BORDER * 2}
+            height={GAME_AREA_HEIGHT + GAME_AREA_BORDER * 2}
+            color={"white"}
+            style={"stroke"}
+            strokeWidth={5}
+          />
+          {/*          <Rect
             x={GAME_AREA_X}
             y={GAME_AREA_Y}
             width={GAME_AREA_WIDTH + GAME_AREA_BORDER * 2}
@@ -190,17 +228,7 @@ export function GameScreen() {
           >
             <Shadow dx={0} dy={0} color={"cyan"} blur={10} />
           </Path>
-          {Array.from({ length: playersLength.current }).map((_, index) => (
-            <Path
-              key={`path_${index}`}
-              path={Selector(playersPathStrings, (p) => p[index])}
-              color={"white"}
-              strokeWidth={5}
-              style="stroke"
-            >
-              <Shadow dx={0} dy={0} color={"white"} blur={10} />
-            </Path>
-          ))}
+
           {HEAD_SVG && (
             <ImageSVG
               origin={position}
@@ -211,7 +239,30 @@ export function GameScreen() {
               height={HEAD_SIZE}
               transform={headRotation}
             />
-          )}
+          )} */}
+
+          <Path
+            key={"pathother"}
+            path={player1Path}
+            color={"white"}
+            strokeWidth={5}
+            style="stroke"
+          >
+            <Shadow dx={0} dy={0} color={"white"} blur={10} />
+          </Path>
+
+          {/* 
+          {gameState.current === "started" && (
+            <Path
+              key={"pathother"}
+              path={Selector(playersPathStrings, (p) => p[1])}
+              color={"white"}
+              strokeWidth={5}
+              style="stroke"
+            >
+              <Shadow dx={0} dy={0} color={"white"} blur={10} />
+            </Path>
+          )} */}
 
           <Text x={50} y={16} text={debugText} font={font} color={"white"} />
         </Canvas>
