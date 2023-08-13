@@ -1,9 +1,4 @@
-import {
-  Selector,
-  useComputedValue,
-  useValue,
-} from "@shopify/react-native-skia";
-import { useEffect } from "react";
+import { useValue } from "@shopify/react-native-skia";
 import { SCALE_FACTOR, SPEED, transformToScreen } from "./geometry";
 
 type Player = {
@@ -14,14 +9,14 @@ type Player = {
   is_ready: boolean;
 };
 
-const { x, y } = transformToScreen({ x: 0, y: 0 });
+const { x, y } = transformToScreen({ x: 75, y: 50 });
 
 export function useGameState() {
   const players = useValue<Player[]>([
     {
       x,
       y,
-      angle_unit_vector_x: 0,
+      angle_unit_vector_x: 1,
       angle_unit_vector_y: 0,
       is_ready: true,
     },

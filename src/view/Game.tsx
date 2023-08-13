@@ -26,6 +26,7 @@ import {
   radiansToDegrees,
   HEAD_SVG,
   HEAD_SIZE,
+  TICK,
 } from "../utils/geometry";
 import { useRealUser } from "../utils/useRealUser";
 import { useGameState } from "../utils/useGameState";
@@ -33,6 +34,9 @@ import { useGameState } from "../utils/useGameState";
 export let lastTimestamp = 0;
 export const maxFPS = 60;
 export const minFrameTime = 1000 / maxFPS;
+
+let lastServerTimestamp = 0;
+const minServerFrameTime = 1000 / TICK;
 
 const initialPosition = transformToScreen({ x: 75, y: 50 });
 
@@ -71,14 +75,12 @@ export function GameScreen() {
     `;
   };
 
-  const loop = (timestamp: number) => {
-    requestAnimationFrame(loop);
+  const uiLoop = (timestamp: number) => {
+    requestAnimationFrame(uiLoop);
 
     if (timestamp - lastTimestamp < minFrameTime) {
       return;
     }
-
-    lastTimestamp = timestamp;
 
     updateUser();
     updateOthers();
@@ -87,11 +89,23 @@ export function GameScreen() {
     drawOthers();
 
     drawDebug();
+    lastTimestamp = timestamp;
     gameClock.current += 1;
   };
 
+  const serverLoop = (timestamp: number) => {
+    requestAnimationFrame(serverLoop);
+
+    if (timestamp - lastServerTimestamp < minServerFrameTime) {
+      return;
+    }
+
+    lastServerTimestamp = timestamp;
+  };
+
   useEffect(() => {
-    requestAnimationFrame(loop);
+    requestAnimationFrame(uiLoop);
+    requestAnimationFrame(serverLoop);
   }, []);
 
   return (
