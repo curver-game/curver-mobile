@@ -1,11 +1,15 @@
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Game } from "./Game";
+
+import { NavigationContainer } from "@react-navigation/native";
+import { RootStackNavigator } from "./src/navigation";
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Game />
+      <NavigationContainer>
+        <RootStackNavigator />
+      </NavigationContainer>
     </GestureHandlerRootView>
   );
 }
