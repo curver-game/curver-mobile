@@ -13,6 +13,7 @@ export const GAME_AREA_ASPECT_RATIO = 1.5;
 export const GAME_AREA_HEIGHT = HEIGHT * 0.9;
 export const GAME_AREA_WIDTH = GAME_AREA_HEIGHT * GAME_AREA_ASPECT_RATIO;
 export const GAME_AREA_BORDER = 5;
+export const LINE_STROKE_WIDTH = 5;
 export const GAME_AREA_X = WIDTH / 2 - GAME_AREA_WIDTH / 2;
 export const GAME_AREA_Y = HEIGHT / 2 - GAME_AREA_HEIGHT / 2;
 
@@ -54,8 +55,12 @@ export const radiansToDegrees = (radians: number) => {
   return (radians * 180) / Math.PI;
 };
 
+export const radiansFromUnitVector = (v: Point) => {
+  return Math.atan2(v.y, v.x);
+};
+
 export const degreeFromUnitVector = (v: Point) => {
-  return radiansToDegrees(Math.atan2(v.y, v.x));
+  return radiansToDegrees(radiansFromUnitVector(v));
 };
 
 export const HEAD_SVG = Skia.SVG

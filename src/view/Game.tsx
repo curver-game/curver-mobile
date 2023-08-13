@@ -7,6 +7,8 @@ import {
   Rect,
   Shadow,
   Selector,
+  Group,
+  ImageSVG,
 } from "@shopify/react-native-skia";
 
 import { useEffect, useRef } from "react";
@@ -23,11 +25,11 @@ import {
   GAME_AREA_WIDTH,
   GAME_AREA_BORDER,
   GAME_AREA_HEIGHT,
-  transformToScreen,
-  TICK,
+  HEAD_SVG,
+  HEAD_SIZE,
+  LINE_STROKE_WIDTH,
 } from "../utils/geometry";
-import { useRealUser } from "../utils/useRealUser";
-import { useGameState } from "../utils/useGameState";
+import { useGame } from "../utils/useGame";
 import { GameState, MessageToReceive, UpdateMessage } from "../types";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackProps } from "../navigation";
@@ -37,11 +39,6 @@ import { useForceUpdate } from "../utils/useForceUpdate";
 export let lastTimestamp = 0;
 export const maxFPS = 60;
 export const minFrameTime = 1000 / maxFPS;
-
-let lastServerTimestamp = 0;
-const minServerFrameTime = 1000 / TICK;
-
-const initialPosition = transformToScreen({ x: 75, y: 50 });
 
 const possibleColors = ["red", "green", "blue", "yellow", "cyan", "magenta"];
 
@@ -54,9 +51,15 @@ export function GameScreen() {
     params: { roomId, userId },
   } = useRoute<RouteProp<RootStackProps, "Game">>();
 
-  const { gesture, update } = useRealUser();
-
-  const { draw, playerIds, playerPathStrings } = useGameState();
+  const {
+    updatePaths,
+    playerIds,
+    playerPathStrings,
+    updateUserInteraction,
+    gesture,
+    headRotations,
+    headPositions,
+  } = useGame(userId);
 
   const gameClock = useValue(0);
 
@@ -118,15 +121,9 @@ export function GameScreen() {
     }
 
     if (gameState.current === "started") {
-      draw();
-      update();
+      updatePaths();
+      updateUserInteraction();
     }
-
-    /*   updateUser();
-    updateOthers();
-
-    drawUser();
-    drawOthers(); */
 
     //drawDebug();
     lastTimestamp = timestamp;
@@ -150,68 +147,63 @@ export function GameScreen() {
             style={"stroke"}
             strokeWidth={5}
           />
+
           {playerIds.map((id, index) => {
             const path = Selector(playerPathStrings, (p) => p[id]);
+
             const color = possibleColors[index % possibleColors.length];
+
             return (
-              <Path
-                key={`path_${index}`}
-                path={path}
-                color={color}
-                strokeWidth={5}
-                style="stroke"
-              >
-                <Shadow dx={0} dy={0} color={color} blur={10} />
-              </Path>
+              <Group key={`path_${index}`}>
+                <Path
+                  path={path}
+                  color={color}
+                  strokeWidth={LINE_STROKE_WIDTH}
+                  style="stroke"
+                >
+                  <Shadow dx={0} dy={0} color={color} blur={10} />
+                </Path>
+              </Group>
             );
           })}
-          {/*          <Rect
-            x={GAME_AREA_X}
-            y={GAME_AREA_Y}
-            width={GAME_AREA_WIDTH + GAME_AREA_BORDER * 2}
-            height={GAME_AREA_HEIGHT + GAME_AREA_BORDER * 2}
-            color={"white"}
-            style={"stroke"}
-            strokeWidth={5}
-          />
-          <Path
-            key={`path_real`}
-            path={path}
-            color={"cyan"}
-            strokeWidth={5}
-            style="stroke"
-          >
-            <Shadow dx={0} dy={0} color={"cyan"} blur={10} />
-          </Path>
 
-          {HEAD_SVG && (
-            <ImageSVG
-              origin={position}
-              svg={HEAD_SVG}
-              x={headX}
-              y={headY}
-              width={HEAD_SIZE}
-              height={HEAD_SIZE}
-              transform={headRotation}
-            />
-          )} */}
+          {playerIds.map((id, index) => {
+            const origin = Selector(headPositions, (p) => {
+              return {
+                x: p[id].x,
+                y: p[id].y,
+              };
+            });
+            const headX = Selector(
+              headPositions,
+              (p) => p[id].x - (HEAD_SIZE / 2 - LINE_STROKE_WIDTH / 2)
+            );
+            const headY = Selector(
+              headPositions,
+              (p) => p[id].y - HEAD_SIZE / 2
+            );
 
-          {/* 
-          {gameState.current === "started" && (
-            <Path
-              key={"pathother"}
-              path={Selector(playersPathStrings, (p) => p[1])}
-              color={"white"}
-              strokeWidth={5}
-              style="stroke"
-            >
-              <Shadow dx={0} dy={0} color={"white"} blur={10} />
-            </Path>
-          )} */}
+            const headRotation = Selector(headRotations, (p) => p[id]);
+
+            return (
+              <ImageSVG
+                key={`head_${index}`}
+                svg={HEAD_SVG}
+                origin={origin}
+                x={headX}
+                y={headY}
+                width={HEAD_SIZE}
+                height={HEAD_SIZE}
+                color={possibleColors[index % possibleColors.length]}
+                transform={headRotation}
+              />
+            );
+          })}
 
           <Text x={50} y={16} text={debugText} font={font} color={"white"} />
         </Canvas>
       </GestureDetector>
+
       {gameState.current === "waiting" && (
         <View
           style={{
