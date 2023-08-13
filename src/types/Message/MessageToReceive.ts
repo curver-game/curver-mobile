@@ -50,6 +50,11 @@ export type UserEliminatedMessage = {
   userId: UUID;
 };
 
+export type FaultyMessage = {
+  type: "faultyMessage";
+  message: string;
+};
+
 export type MessageToReceive =
   | CreatedRoomMessage
   | JoinRoomErrorMessage
@@ -59,4 +64,5 @@ export type MessageToReceive =
   | UpdateMessage
   | SyncPathsMessage
   | GameEndedMessage
-  | UserEliminatedMessage;
+  | UserEliminatedMessage
+  | FaultyMessage;

@@ -6,12 +6,10 @@ import {
   useFont,
   Rect,
   Shadow,
-  ImageSVG,
   Selector,
-  useComputedValue,
 } from "@shopify/react-native-skia";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -25,13 +23,7 @@ import {
   GAME_AREA_WIDTH,
   GAME_AREA_BORDER,
   GAME_AREA_HEIGHT,
-  WIDTH,
-  HEIGHT,
   transformToScreen,
-  transformToBackend,
-  radiansToDegrees,
-  HEAD_SVG,
-  HEAD_SIZE,
   TICK,
 } from "../utils/geometry";
 import { useRealUser } from "../utils/useRealUser";
@@ -51,43 +43,20 @@ const minServerFrameTime = 1000 / TICK;
 
 const initialPosition = transformToScreen({ x: 75, y: 50 });
 
+const possibleColors = ["red", "green", "blue", "yellow", "cyan", "magenta"];
+
 export function GameScreen() {
   const gameState = useRef<GameState>("waiting");
   const shouldShowReady = useRef(false);
-
   const forceUpdate = useForceUpdate();
-
-  const player1Position = useValue(initialPosition);
-  const player1Paths = useValue<string[]>([]);
-
-  const drawPlayer1 = () => {
-    player1Paths.current = [
-      ...player1Paths.current,
-      `L ${player1Position.current.x} ${player1Position.current.y}`,
-    ];
-  };
-
-  const player1Path = useComputedValue(() => {
-    return player1Paths.current.join(" ");
-  }, [player1Paths]);
 
   const {
     params: { roomId, userId },
   } = useRoute<RouteProp<RootStackProps, "Game">>();
 
-  /*  const {
-    position,
-    rotateAngle,
-    update: updateUser,
-    draw: drawUser,
-    gesture,
-    headX,
-    headY,
-    headRotation,
-    path,
-  } = useRealUser(); */
+  const { gesture, update } = useRealUser();
 
-  const { gesture } = useRealUser();
+  const { draw, playerIds, playerPathStrings } = useGameState();
 
   const gameClock = useValue(0);
 
@@ -100,32 +69,6 @@ export function GameScreen() {
     if (message.type === "update") {
       const updateMessage = message as UpdateMessage;
       gameState.current = updateMessage.gameState;
-
-      if (updateMessage.gameState === "countdown") {
-        player1Position.current = transformToScreen(updateMessage.players[0]);
-        player1Paths.current = [
-          `M ${player1Position.current.x} ${player1Position.current.y}`,
-        ];
-      }
-
-      if (updateMessage.gameState === "started") {
-        const newPos = {
-          x:
-            player1Position.current.x +
-            updateMessage.players[0].angleUnitVectorX,
-          y:
-            player1Position.current.y +
-            updateMessage.players[0].angleUnitVectorY,
-        };
-        player1Position.current = newPos;
-        console.log("newPos", player1Position.current);
-        drawPlayer1();
-      }
-
-      /*  const playersWithoutUser = updateMessage.players.filter(
-        (p) => p.id !== userId
-      ); */
-      /*  setPlayers(playersWithoutUser); */
 
       if (updateMessage.players.length >= 2) {
         shouldShowReady.current = true;
@@ -171,6 +114,14 @@ export function GameScreen() {
       return;
     }
 
+    if (gameState.current === "countdown") {
+    }
+
+    if (gameState.current === "started") {
+      draw();
+      update();
+    }
+
     /*   updateUser();
     updateOthers();
 
@@ -182,19 +133,8 @@ export function GameScreen() {
     gameClock.current += 1;
   };
 
-  const serverLoop = (timestamp: number) => {
-    requestAnimationFrame(serverLoop);
-
-    if (timestamp - lastServerTimestamp < minServerFrameTime) {
-      return;
-    }
-
-    lastServerTimestamp = timestamp;
-  };
-
   useEffect(() => {
     requestAnimationFrame(uiLoop);
-    requestAnimationFrame(serverLoop);
   }, []);
 
   return (
@@ -210,6 +150,21 @@ export function GameScreen() {
             style={"stroke"}
             strokeWidth={5}
           />
+          {playerIds.map((id, index) => {
+            const path = Selector(playerPathStrings, (p) => p[id]);
+            const color = possibleColors[index % possibleColors.length];
+            return (
+              <Path
+                key={`path_${index}`}
+                path={path}
+                color={color}
+                strokeWidth={5}
+                style="stroke"
+              >
+                <Shadow dx={0} dy={0} color={color} blur={10} />
+              </Path>
+            );
+          })}
           {/*          <Rect
             x={GAME_AREA_X}
             y={GAME_AREA_Y}
@@ -240,16 +195,6 @@ export function GameScreen() {
               transform={headRotation}
             />
           )} */}
-
-          <Path
-            key={"pathother"}
-            path={player1Path}
-            color={"white"}
-            strokeWidth={5}
-            style="stroke"
-          >
-            <Shadow dx={0} dy={0} color={"white"} blur={10} />
-          </Path>
 
           {/* 
           {gameState.current === "started" && (

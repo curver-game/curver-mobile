@@ -16,6 +16,7 @@ import {
 import { useCallback } from "react";
 
 import { Gesture } from "react-native-gesture-handler";
+import { gameWebsocket } from "../api/websocket";
 
 const initialPosition = transformToScreen({ x: 75, y: 50 });
 
@@ -44,6 +45,14 @@ export function useRealUser() {
       x: position.current.x + deltaPos.current.x * SPEED * SCALE_FACTOR,
       y: position.current.y + deltaPos.current.y * SPEED * SCALE_FACTOR,
     };
+
+    if (isPressing.current) {
+      gameWebsocket.sendMessage({
+        type: "rotate",
+        angleUnitVectorX: deltaPos.current.x,
+        angleUnitVectorY: deltaPos.current.y,
+      });
+    }
 
     position.current = newPos;
   }, []);

@@ -54,6 +54,10 @@ export const radiansToDegrees = (radians: number) => {
   return (radians * 180) / Math.PI;
 };
 
+export const degreeFromUnitVector = (v: Point) => {
+  return radiansToDegrees(Math.atan2(v.y, v.x));
+};
+
 export const HEAD_SVG = Skia.SVG
   .MakeFromString(`<svg width="12" height="11" viewBox="0 0 12 11" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M6.18168 0.360927C6.30895 0.134899 6.63441 0.134899 6.76167 0.360927L11.9567 9.58736C12.0816 9.80921 11.9213 10.0834 11.6667 10.0834H1.27665C1.02205 10.0834 0.861739 9.80921 0.986654 9.58736L6.18168 0.360927Z" fill="#D9D9D9"/>
