@@ -1,4 +1,4 @@
-# Curver Backend
+# Curver Mobile Application
 
 <img width="906" alt="image" src="https://github.com/curver-game/curver-backend/assets/22038798/32e99dd6-c429-4378-bc41-17aedeed87b9">
 
