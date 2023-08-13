@@ -10,8 +10,13 @@ import {
   Selector,
 } from "@shopify/react-native-skia";
 
-import { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Text as RNText,
+  TouchableOpacity,
+} from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import {
   GAME_AREA_X,
@@ -30,6 +35,11 @@ import {
 } from "../utils/geometry";
 import { useRealUser } from "../utils/useRealUser";
 import { useGameState } from "../utils/useGameState";
+import { GameState, MessageToReceive, UpdateMessage } from "../types";
+import { RouteProp, useRoute } from "@react-navigation/native";
+import { RootStackProps } from "../navigation";
+import { gameWebsocket } from "../api/websocket";
+import { useForceUpdate } from "../utils/useForceUpdate";
 
 export let lastTimestamp = 0;
 export const maxFPS = 60;
@@ -41,6 +51,15 @@ const minServerFrameTime = 1000 / TICK;
 const initialPosition = transformToScreen({ x: 75, y: 50 });
 
 export function GameScreen() {
+  const gameState = useRef<GameState>("waiting");
+  const shouldShowReady = useRef(false);
+  const playersLength = useRef(0);
+  const forceUpdate = useForceUpdate();
+
+  const {
+    params: { roomId, userId },
+  } = useRoute<RouteProp<RootStackProps, "Game">>();
+
   const {
     position,
     rotateAngle,
@@ -57,12 +76,47 @@ export function GameScreen() {
     playersPathStrings,
     update: updateOthers,
     draw: drawOthers,
+    setPlayers,
+    players,
   } = useGameState();
 
   const gameClock = useValue(0);
 
   const font = useFont(require("./../../assets/Inter.ttf"), 16);
   const debugText = useValue("debug");
+
+  const onMessage = (event: MessageEvent) => {
+    const message = JSON.parse(event.data) as MessageToReceive;
+
+    if (message.type === "update") {
+      const updateMessage = message as UpdateMessage;
+      gameState.current = updateMessage.gameState;
+      const playersWithoutUser = updateMessage.players.filter(
+        (p) => p.id !== userId
+      );
+      setPlayers(playersWithoutUser);
+      playersLength.current = playersWithoutUser.length;
+      if (players.current.length >= 2) {
+        shouldShowReady.current = true;
+      }
+      forceUpdate();
+    }
+  };
+
+  useEffect(() => {
+    gameWebsocket.socket?.addEventListener("message", onMessage);
+
+    return () => {
+      gameWebsocket.socket?.removeEventListener("message", onMessage);
+    };
+  }, []);
+
+  const onReady = () => {
+    gameWebsocket.sendMessage({
+      type: "isReady",
+      isReady: true,
+    });
+  };
 
   const drawDebug = () => {
     const { x, y } = transformToBackend(position.current);
@@ -79,6 +133,10 @@ export function GameScreen() {
     requestAnimationFrame(uiLoop);
 
     if (timestamp - lastTimestamp < minFrameTime) {
+      return;
+    }
+
+    if (gameState.current === "waiting") {
       return;
     }
 
@@ -108,6 +166,8 @@ export function GameScreen() {
     requestAnimationFrame(serverLoop);
   }, []);
 
+  console.log("user", userId, playersLength);
+
   return (
     <View style={styles.container}>
       <GestureDetector gesture={gesture}>
@@ -130,7 +190,7 @@ export function GameScreen() {
           >
             <Shadow dx={0} dy={0} color={"cyan"} blur={10} />
           </Path>
-          {Array.from({ length: 1 }).map((_, index) => (
+          {Array.from({ length: playersLength.current }).map((_, index) => (
             <Path
               key={`path_${index}`}
               path={Selector(playersPathStrings, (p) => p[index])}
@@ -156,6 +216,29 @@ export function GameScreen() {
           <Text x={50} y={16} text={debugText} font={font} color={"white"} />
         </Canvas>
       </GestureDetector>
+      {gameState.current === "waiting" && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <RNText style={{ color: "white" }}>
+            {`Waiting to other players...\n\nRoom ID: ${roomId}\nUser ID: ${userId}`}
+          </RNText>
+          {shouldShowReady.current && (
+            <TouchableOpacity onPress={onReady}>
+              <RNText style={{ color: "white" }}>Ready</RNText>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }
