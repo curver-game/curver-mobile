@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useAppNavigation } from '../utils'
 import { gameWebsocket } from '../api/websocket'
-import { CreatedRoomMessage, JoinedRoomMessage, UUID } from '../types'
+import { UUID } from '../types'
 import { TextInput } from 'react-native-gesture-handler'
 import { useState } from 'react'
 
@@ -12,10 +12,9 @@ export function HomeScreen() {
     const [roomId, setRoomId] = useState<UUID>('')
 
     const onCreateRoom = async () => {
-        const res = (await gameWebsocket.sendMessageWithResponse(
-            { type: 'createRoom' },
-            'joinedRoom'
-        )) as JoinedRoomMessage
+        const res = await gameWebsocket.sendMessageAndWaitForResponse({
+            type: 'createRoom',
+        })
 
         console.log(res)
 
@@ -23,12 +22,17 @@ export function HomeScreen() {
     }
 
     const onJoinRoom = async () => {
-        const res = (await gameWebsocket.sendMessageWithResponse(
-            { type: 'joinRoom', roomId },
-            'joinedRoom'
-        )) as JoinedRoomMessage
+        const res = await gameWebsocket.sendMessageAndWaitForResponse({
+            type: 'joinRoom',
+            roomId,
+        })
 
         console.log(res)
+
+        if (res.type === 'joinRoomError') {
+            // TODO: Show room not found
+            return
+        }
 
         navigation.navigate('Game', { roomId: res.roomId, userId: res.userId })
     }
