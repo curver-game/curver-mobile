@@ -4,6 +4,7 @@ import { gameWebsocket } from '../api/websocket'
 import { UUID } from '../types'
 import { TextInput } from 'react-native-gesture-handler'
 import { useState } from 'react'
+import * as Clipboard from 'expo-clipboard'
 
 gameWebsocket.connect()
 
@@ -17,6 +18,7 @@ export function HomeScreen() {
         })
 
         console.log(res)
+        Clipboard.setStringAsync(res.roomId)
 
         navigation.navigate('Game', { roomId: res.roomId, userId: res.userId })
     }

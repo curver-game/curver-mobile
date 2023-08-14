@@ -5,32 +5,24 @@ import {
     useValueEffect,
 } from '@shopify/react-native-skia'
 import { MessageToReceive, Player, UUID, UpdateMessage } from '../types'
-import {
-    convertRadiansToUnitVector,
-    convertUnitVectorToRadians,
-    degreesToRadians,
-} from './geometry'
+import { convertUnitVectorToRadians, degreesToRadians } from './geometry'
 import { gameWebsocket } from '../api/websocket'
 import { useEffect, useState } from 'react'
-import { Gesture } from 'react-native-gesture-handler'
 import {
     Position,
     transformGameSpaceToScreenSpace,
     useGameAreaScaleFactor,
 } from './gameArea'
 import { DELTA_POS_PER_TiCK } from './constants'
-import { useSafeAreaFrame } from 'react-native-safe-area-context'
 
 export function useGame(userId: UUID) {
     const players = useValue<Record<UUID, Player>>({})
     const playerPaths = useValue<Record<UUID, string[]>>({})
     const playerAngles = useValue<Record<UUID, number>>({})
     const realUserAngle = useValue(degreesToRadians(0))
-    const isPressing = useValue<'right' | 'left' | null>(null)
     const [playerIds, setPlayerIds] = useState<UUID[]>([])
 
     const gameAreaScaleFactor = useGameAreaScaleFactor()
-    const { width: screenWidth } = useSafeAreaFrame()
 
     const playerPathStrings = useComputedValue<Record<UUID, string>>(() => {
         return Object.keys(playerPaths.current).reduce(
@@ -113,25 +105,6 @@ export function useGame(userId: UUID) {
         }
     }
 
-    const updateUserInteraction = () => {
-        if (isPressing.current === 'right') {
-            realUserAngle.current += degreesToRadians(5)
-        }
-        if (isPressing.current === 'left') {
-            realUserAngle.current += -degreesToRadians(5)
-        }
-
-        const delta = convertRadiansToUnitVector(realUserAngle.current)
-
-        if (isPressing.current) {
-            gameWebsocket.sendMessage({
-                type: 'rotate',
-                angleUnitVectorX: delta.x,
-                angleUnitVectorY: delta.y,
-            })
-        }
-    }
-
     const onMessage = (event: MessageEvent) => {
         const message = JSON.parse(event.data) as MessageToReceive
 
@@ -177,18 +150,6 @@ export function useGame(userId: UUID) {
         }
     }
 
-    const gesture = Gesture.Pan()
-        .onBegin((e) => {
-            if (e.x > screenWidth / 2) {
-                isPressing.current = 'right'
-            } else {
-                isPressing.current = 'left'
-            }
-        })
-        .onTouchesUp(() => {
-            isPressing.current = null
-        })
-
     const headRotations = useComputedValue<Record<UUID, Transforms2d>>(() => {
         return Object.keys(playerAngles.current).reduce(
             (acc, id) => ({
@@ -233,8 +194,6 @@ export function useGame(userId: UUID) {
         updatePaths,
         playerIds,
         playerPathStrings,
-        gesture,
-        updateUserInteraction,
         playerPaths,
         headRotations,
         headPositions,

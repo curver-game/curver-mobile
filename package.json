@@ -15,6 +15,7 @@
     "@react-navigation/native-stack": "^6.9.13",
     "@shopify/react-native-skia": "0.1.196",
     "expo": "~49.0.6",
+    "expo-clipboard": "~4.3.1",
     "expo-screen-orientation": "~6.0.5",
     "expo-splash-screen": "~0.20.5",
     "expo-status-bar": "~1.6.0",

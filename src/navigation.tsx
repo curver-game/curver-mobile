@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { GameScreen } from './view/Game'
-import { HomeScreen } from './view/Home'
 import { UUID } from './types'
+import { GameScreen, HomeScreen } from './view'
 
 export type RootStackProps = {
     Home: undefined
