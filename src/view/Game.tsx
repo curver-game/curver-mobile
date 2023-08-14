@@ -19,22 +19,19 @@ import {
     TouchableOpacity,
 } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
-import {
-    GAME_AREA_X,
-    GAME_AREA_Y,
-    GAME_AREA_WIDTH,
-    GAME_AREA_BORDER,
-    GAME_AREA_HEIGHT,
-    HEAD_SVG,
-    HEAD_SIZE,
-    LINE_STROKE_WIDTH,
-} from '../utils/geometry'
 import { useGame } from '../utils/useGame'
 import { GameState, MessageToReceive, UpdateMessage } from '../types'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { RootStackProps } from '../navigation'
 import { gameWebsocket } from '../api/websocket'
 import { useForceUpdate } from '../utils/useForceUpdate'
+import { useCenteredGameAreaPosition, useGameArea } from '../utils/gameArea'
+import {
+    GAME_AREA_BORDER,
+    HEAD_SIZE,
+    LINE_STROKE_WIDTH,
+} from '../utils/constants'
+import { HEAD_SVG } from '../utils/drawing'
 
 export let lastTimestamp = 0
 export const maxFPS = 60
@@ -134,15 +131,18 @@ export function GameScreen() {
         requestAnimationFrame(uiLoop)
     }, [])
 
+    const { x: gameAreaX, y: gameAreaY } = useCenteredGameAreaPosition()
+    const { width: gameAreaWidth, height: gameAreaHeight } = useGameArea()
+
     return (
         <View style={styles.container}>
             <GestureDetector gesture={gesture}>
                 <Canvas style={[styles.container]}>
                     <Rect
-                        x={GAME_AREA_X}
-                        y={GAME_AREA_Y}
-                        width={GAME_AREA_WIDTH + GAME_AREA_BORDER * 2}
-                        height={GAME_AREA_HEIGHT + GAME_AREA_BORDER * 2}
+                        x={gameAreaX}
+                        y={gameAreaY}
+                        width={gameAreaWidth + GAME_AREA_BORDER * 2}
+                        height={gameAreaHeight + GAME_AREA_BORDER * 2}
                         color={'white'}
                         style={'stroke'}
                         strokeWidth={5}

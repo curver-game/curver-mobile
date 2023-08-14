@@ -6,27 +6,31 @@ import {
 } from '@shopify/react-native-skia'
 import { MessageToReceive, Player, UUID, UpdateMessage } from '../types'
 import {
-    HEAD_SIZE,
-    Point,
-    SCALE_FACTOR,
-    SPEED,
-    WIDTH,
+    convertRadiansToUnitVector,
+    convertUnitVectorToRadians,
     degreesToRadians,
-    radiansFromUnitVector,
-    rotatePoint,
-    transformToScreen,
 } from './geometry'
 import { gameWebsocket } from '../api/websocket'
 import { useEffect, useState } from 'react'
 import { Gesture } from 'react-native-gesture-handler'
+import {
+    Position,
+    transformGameSpaceToScreenSpace,
+    useGameAreaScaleFactor,
+} from './gameArea'
+import { DELTA_POS_PER_TiCK } from './constants'
+import { useSafeAreaFrame } from 'react-native-safe-area-context'
 
-export function useGame(realUserId: UUID) {
+export function useGame(userId: UUID) {
     const players = useValue<Record<UUID, Player>>({})
     const playerPaths = useValue<Record<UUID, string[]>>({})
     const playerAngles = useValue<Record<UUID, number>>({})
     const realUserAngle = useValue(degreesToRadians(0))
     const isPressing = useValue<'right' | 'left' | null>(null)
     const [playerIds, setPlayerIds] = useState<UUID[]>([])
+
+    const gameAreaScaleFactor = useGameAreaScaleFactor()
+    const { width: screenWidth } = useSafeAreaFrame()
 
     const playerPathStrings = useComputedValue<Record<UUID, string>>(() => {
         return Object.keys(playerPaths.current).reduce(
@@ -38,18 +42,18 @@ export function useGame(realUserId: UUID) {
         )
     }, [playerPaths])
 
-    const setInitialPosition = (id: UUID, pos: Point) => {
+    const setInitialPosition = (id: UUID, position: Position) => {
         const player = players.current[id]
         if (!player) {
             return
         }
 
-        player.x = pos.x
-        player.y = pos.y
+        player.x = position.x
+        player.y = position.y
 
         playerPaths.current = {
             ...playerPaths.current,
-            [id]: [`M ${pos.x} ${pos.y}`],
+            [id]: [`M ${position.x} ${position.y}`],
         }
     }
 
@@ -77,13 +81,17 @@ export function useGame(realUserId: UUID) {
 
             if (!clientPlayer) continue
 
-            const newPos: Point = {
+            const newPos: Position = {
                 x:
                     clientPlayer.x +
-                    player.angleUnitVectorX * SPEED * SCALE_FACTOR,
+                    player.angleUnitVectorX *
+                        DELTA_POS_PER_TiCK *
+                        gameAreaScaleFactor,
                 y:
                     clientPlayer.y +
-                    player.angleUnitVectorY * SPEED * SCALE_FACTOR,
+                    player.angleUnitVectorY *
+                        DELTA_POS_PER_TiCK *
+                        gameAreaScaleFactor,
             }
 
             players.current = {
@@ -97,7 +105,7 @@ export function useGame(realUserId: UUID) {
 
             playerAngles.current = {
                 ...playerAngles.current,
-                [player.id]: radiansFromUnitVector({
+                [player.id]: convertUnitVectorToRadians({
                     x: player.angleUnitVectorX,
                     y: player.angleUnitVectorY,
                 }),
@@ -113,7 +121,7 @@ export function useGame(realUserId: UUID) {
             realUserAngle.current += -degreesToRadians(5)
         }
 
-        const delta = rotatePoint(realUserAngle.current)
+        const delta = convertRadiansToUnitVector(realUserAngle.current)
 
         if (isPressing.current) {
             gameWebsocket.sendMessage({
@@ -141,16 +149,22 @@ export function useGame(realUserId: UUID) {
 
                 // set initial position
                 for (const player of updateMessage.players) {
-                    setInitialPosition(player.id, transformToScreen(player))
+                    setInitialPosition(
+                        player.id,
+                        transformGameSpaceToScreenSpace(
+                            player,
+                            gameAreaScaleFactor
+                        )
+                    )
                 }
 
                 // set real user angle
                 const realUser = updateMessage.players.find(
-                    (player) => player.id === realUserId
+                    (player) => player.id === userId
                 )
 
                 if (realUser) {
-                    realUserAngle.current = radiansFromUnitVector({
+                    realUserAngle.current = convertUnitVectorToRadians({
                         x: realUser.angleUnitVectorX,
                         y: realUser.angleUnitVectorY,
                     })
@@ -165,7 +179,7 @@ export function useGame(realUserId: UUID) {
 
     const gesture = Gesture.Pan()
         .onBegin((e) => {
-            if (e.x > WIDTH / 2) {
+            if (e.x > screenWidth / 2) {
                 isPressing.current = 'right'
             } else {
                 isPressing.current = 'left'
@@ -189,7 +203,7 @@ export function useGame(realUserId: UUID) {
         )
     }, [playerAngles])
 
-    const headPositions = useComputedValue<Record<UUID, Point>>(() => {
+    const headPositions = useComputedValue<Record<UUID, Position>>(() => {
         return Object.keys(players.current).reduce((acc, id) => {
             // if player goes right we need add half of the head size to the x position
             // if player goes left we need subtract half of the head size to the x position
