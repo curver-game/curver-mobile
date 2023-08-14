@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, Button } from 'react-native'
 import { useAppNavigation } from '../utils'
 import { gameWebsocket } from '../api/websocket'
 import { UUID } from '../types'
@@ -12,18 +12,19 @@ export function HomeScreen() {
     const navigation = useAppNavigation()
     const [roomId, setRoomId] = useState<UUID>('')
 
-    const onCreateRoom = async () => {
+    const createRoom = async () => {
         const res = await gameWebsocket.sendMessageAndWaitForResponse({
             type: 'createRoom',
         })
 
         console.log(res)
+
         Clipboard.setStringAsync(res.roomId)
 
         navigation.navigate('Game', { roomId: res.roomId, userId: res.userId })
     }
 
-    const onJoinRoom = async () => {
+    const joinRoom = async () => {
         const res = await gameWebsocket.sendMessageAndWaitForResponse({
             type: 'joinRoom',
             roomId,
@@ -40,35 +41,36 @@ export function HomeScreen() {
     }
 
     return (
-        <View
-            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
-            <TouchableOpacity onPress={onCreateRoom}>
-                <Text>Start Game</Text>
-            </TouchableOpacity>
-
-            <View
-                style={{
-                    marginVertical: 10,
-                    height: 2,
-                    width: '60%',
-                    backgroundColor: 'gray',
-                }}
-            />
+        <View style={styles.container}>
+            <Button onPress={createRoom} title="Create a new game" />
             <TextInput
-                style={{
-                    height: 40,
-                    width: '40%',
-                    borderColor: 'gray',
-                    borderWidth: 1,
-                }}
+                style={styles.roomIdInput}
                 placeholder="Room ID"
-                value={roomId}
                 onChangeText={setRoomId}
+                onSubmitEditing={joinRoom}
             />
-            <TouchableOpacity onPress={onJoinRoom}>
-                <Text>Join Game</Text>
-            </TouchableOpacity>
+            <Button
+                onPress={joinRoom}
+                title="Join game"
+                disabled={roomId.trim().length === 0}
+            />
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    roomIdInput: {
+        height: 40,
+        width: '50%',
+        borderWidth: 1,
+        borderRadius: 5,
+        borderColor: 'rgba(0,0,0,0.2)',
+        padding: 10,
+    },
+})
