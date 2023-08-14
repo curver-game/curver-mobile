@@ -4,22 +4,22 @@ import {
     useValue,
     useValueEffect,
 } from '@shopify/react-native-skia'
-import { MessageToReceive, Player, UUID, UpdateMessage } from '../types'
-import { convertUnitVectorToRadians, degreesToRadians } from './geometry'
-import { gameWebsocket } from '../api/websocket'
-import { useEffect, useState } from 'react'
+import { Player, UUID, UpdateMessage } from '../types'
+import { convertUnitVectorToRadians } from './geometry'
+import { useCallback, useState } from 'react'
 import {
     Position,
     transformGameSpaceToScreenSpace,
     useGameAreaScaleFactor,
 } from './gameArea'
 import { DELTA_POS_PER_TiCK } from './constants'
+import { useListenToSpecificMessage } from './messageListener'
 
-export function useGame(userId: UUID) {
+export function useGame() {
     const players = useValue<Record<UUID, Player>>({})
     const playerPaths = useValue<Record<UUID, string[]>>({})
     const playerAngles = useValue<Record<UUID, number>>({})
-    const realUserAngle = useValue(degreesToRadians(0))
+
     const [playerIds, setPlayerIds] = useState<UUID[]>([])
 
     const gameAreaScaleFactor = useGameAreaScaleFactor()
@@ -34,22 +34,25 @@ export function useGame(userId: UUID) {
         )
     }, [playerPaths])
 
-    const setInitialPosition = (id: UUID, position: Position) => {
-        const player = players.current[id]
-        if (!player) {
-            return
-        }
+    const setInitialPosition = useCallback(
+        (id: UUID, position: Position) => {
+            const player = players.current[id]
+            if (!player) {
+                return
+            }
 
-        player.x = position.x
-        player.y = position.y
+            player.x = position.x
+            player.y = position.y
 
-        playerPaths.current = {
-            ...playerPaths.current,
-            [id]: [`M ${position.x} ${position.y}`],
-        }
-    }
+            playerPaths.current = {
+                ...playerPaths.current,
+                [id]: [`M ${position.x} ${position.y}`],
+            }
+        },
+        [playerPaths, players]
+    )
 
-    const updatePaths = () => {
+    const updatePaths = useCallback(() => {
         for (const id in playerPaths.current) {
             const player = players.current[id]
             if (!player) {
@@ -64,51 +67,54 @@ export function useGame(userId: UUID) {
                 [id]: path,
             }
         }
-    }
+    }, [playerPaths, players])
 
-    const updatePlayers = (update: UpdateMessage) => {
-        // calculate new position based on delta
-        for (const player of update.players) {
-            const clientPlayer = players.current[player.id]
+    const updatePlayers = useCallback(
+        (update: UpdateMessage) => {
+            // calculate new position based on delta
+            for (const serverPlayer of update.players) {
+                const clientPlayer = players.current[serverPlayer.id]
 
-            if (!clientPlayer) continue
+                if (!clientPlayer) continue
 
-            const newPos: Position = {
-                x:
-                    clientPlayer.x +
-                    player.angleUnitVectorX *
-                        DELTA_POS_PER_TiCK *
-                        gameAreaScaleFactor,
-                y:
-                    clientPlayer.y +
-                    player.angleUnitVectorY *
-                        DELTA_POS_PER_TiCK *
-                        gameAreaScaleFactor,
+                const deltaPosInGameSpace: Position = {
+                    x: serverPlayer.angleUnitVectorX * DELTA_POS_PER_TiCK,
+                    y: serverPlayer.angleUnitVectorY * DELTA_POS_PER_TiCK,
+                }
+
+                const deltaPosInScreenSpace = transformGameSpaceToScreenSpace(
+                    deltaPosInGameSpace,
+                    gameAreaScaleFactor
+                )
+
+                const newPos: Position = {
+                    x: clientPlayer.x + deltaPosInScreenSpace.x,
+                    y: clientPlayer.y + deltaPosInScreenSpace.y,
+                }
+
+                players.current = {
+                    ...players.current,
+                    [serverPlayer.id]: {
+                        ...clientPlayer,
+                        x: newPos.x,
+                        y: newPos.y,
+                    },
+                }
+
+                playerAngles.current = {
+                    ...playerAngles.current,
+                    [serverPlayer.id]: convertUnitVectorToRadians({
+                        x: serverPlayer.angleUnitVectorX,
+                        y: serverPlayer.angleUnitVectorY,
+                    }),
+                }
             }
+        },
+        [gameAreaScaleFactor, playerAngles, players]
+    )
 
-            players.current = {
-                ...players.current,
-                [player.id]: {
-                    ...clientPlayer,
-                    x: newPos.x,
-                    y: newPos.y,
-                },
-            }
-
-            playerAngles.current = {
-                ...playerAngles.current,
-                [player.id]: convertUnitVectorToRadians({
-                    x: player.angleUnitVectorX,
-                    y: player.angleUnitVectorY,
-                }),
-            }
-        }
-    }
-
-    const onMessage = (event: MessageEvent) => {
-        const message = JSON.parse(event.data) as MessageToReceive
-
-        if (message.type === 'update') {
+    useListenToSpecificMessage(
+        (message) => {
             const updateMessage = message
 
             if (updateMessage.gameState === 'countdown') {
@@ -130,27 +136,24 @@ export function useGame(userId: UUID) {
                         )
                     )
                 }
-
-                // set real user angle
-                const realUser = updateMessage.players.find(
-                    (player) => player.id === userId
-                )
-
-                if (realUser) {
-                    realUserAngle.current = convertUnitVectorToRadians({
-                        x: realUser.angleUnitVectorX,
-                        y: realUser.angleUnitVectorY,
-                    })
-                }
             }
 
             if (updateMessage.gameState === 'started') {
                 updatePlayers(updateMessage)
+                updatePaths()
             }
-        }
-    }
+        },
+        [
+            gameAreaScaleFactor,
+            players,
+            setInitialPosition,
+            updatePaths,
+            updatePlayers,
+        ],
+        'update'
+    )
 
-    const headRotations = useComputedValue<Record<UUID, Transforms2d>>(() => {
+    const playerRotations = useComputedValue<Record<UUID, Transforms2d>>(() => {
         return Object.keys(playerAngles.current).reduce(
             (acc, id) => ({
                 ...acc,
@@ -164,38 +167,16 @@ export function useGame(userId: UUID) {
         )
     }, [playerAngles])
 
-    const headPositions = useComputedValue<Record<UUID, Position>>(() => {
-        return Object.keys(players.current).reduce((acc, id) => {
-            // if player goes right we need add half of the head size to the x position
-            // if player goes left we need subtract half of the head size to the x position
-            return {
-                ...acc,
-                [id]: {
-                    x: players.current[id].x,
-                    y: players.current[id].y,
-                },
-            }
-        }, {})
-    }, [players])
-
     useValueEffect(players, () => {
         setPlayerIds(Object.keys(players.current))
     })
-
-    useEffect(() => {
-        gameWebsocket.socket?.addEventListener('message', onMessage)
-
-        return () => {
-            gameWebsocket.socket?.removeEventListener('message', onMessage)
-        }
-    }, [])
 
     return {
         updatePaths,
         playerIds,
         playerPathStrings,
         playerPaths,
-        headRotations,
-        headPositions,
+        playerRotations,
+        players,
     }
 }

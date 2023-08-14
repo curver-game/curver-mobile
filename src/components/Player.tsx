@@ -1,26 +1,28 @@
-import { ImageSVG } from '@shopify/react-native-skia'
-import { transformGameSpaceToScreenSpace } from '../utils/gameArea'
+import { Color, ImageSVG } from '@shopify/react-native-skia'
+import { Position, transformGameSpaceToScreenSpace } from '../utils/gameArea'
 import { PLAYER_SIZE } from '../utils/constants'
 import { PLAYER_SVG } from '../utils/drawing'
 
-export function Player() {
+type Props = {
+    index: number
+    position: Position
+    rotation: any
+    color: Color
+    origin: any
+}
+
+export function Player({ index, position, rotation, color, origin }: Props) {
     return (
         <ImageSVG
             key={`head_${index}`}
             svg={PLAYER_SVG}
             origin={origin}
-            x={transformGameSpaceToScreenSpace(
-                headX.value.current,
-                gameAreaScaleFactor
-            )}
-            y={transformGameSpaceToScreenSpace(
-                headY.value.current,
-                gameAreaScaleFactor
-            )}
+            x={position.x}
+            y={position.y}
             width={PLAYER_SIZE}
             height={PLAYER_SIZE}
-            color={possibleColors[index % possibleColors.length]}
-            transform={headRotation}
+            color={color}
+            transform={rotation}
         />
     )
 }
