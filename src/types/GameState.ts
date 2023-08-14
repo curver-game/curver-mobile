@@ -1,1 +1,1 @@
-export type GameState = "waiting" | "countdown" | "started"
+export type GameState = 'waiting' | 'countdown' | 'started'

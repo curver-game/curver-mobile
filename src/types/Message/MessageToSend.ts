@@ -1,40 +1,40 @@
-import { UUID } from "..";
+import { UUID } from '..'
 
 export type CreateRoomMessage = {
-  type: "createRoom";
-};
+    type: 'createRoom'
+}
 
 export type JoinRoomMessage = {
-  type: "joinRoom";
-  roomId: UUID;
-};
+    type: 'joinRoom'
+    roomId: UUID
+}
 
 export type LeaveRoomMessage = {
-  type: "leaveRoom";
-};
+    type: 'leaveRoom'
+}
 
 export type RotateMessage = {
-  type: "rotate";
-  /**
-   * Float between -1 and 1
-   */
-  angleUnitVectorX: number;
-  /**
-   * Float between -1 and 1
-   */
-  angleUnitVectorY: number;
-};
+    type: 'rotate'
+    /**
+     * Float between -1 and 1
+     */
+    angleUnitVectorX: number
+    /**
+     * Float between -1 and 1
+     */
+    angleUnitVectorY: number
+}
 
 export type IsReadyMessage = {
-  type: "isReady";
-  isReady: boolean;
-};
+    type: 'isReady'
+    isReady: boolean
+}
 
 export type MessageToSend =
-  | CreateRoomMessage
-  | JoinRoomMessage
-  | LeaveRoomMessage
-  | RotateMessage
-  | IsReadyMessage;
+    | CreateRoomMessage
+    | JoinRoomMessage
+    | LeaveRoomMessage
+    | RotateMessage
+    | IsReadyMessage
 
-export type MessageToSendWithResponse = CreateRoomMessage | JoinRoomMessage;
+export type MessageToSendWithResponse = CreateRoomMessage | JoinRoomMessage

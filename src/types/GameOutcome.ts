@@ -1,6 +1,6 @@
-import { UUID } from "."
+import { UUID } from '.'
 
 export type GameOutcome = {
-  type: 'winner',
-  userId: UUID
+    type: 'winner'
+    userId: UUID
 }

@@ -1,5 +1,5 @@
 export type Path = {
-  nodes: Node[]
+    nodes: Node[]
 }
 
 export type Node = [number, number]
