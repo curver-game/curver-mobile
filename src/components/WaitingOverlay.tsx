@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Button } from 'react-native'
 import { UUID } from '../types'
 import { gameWebsocket } from '../api/websocket'
 
@@ -22,26 +22,21 @@ export function WaitingOverlay({
     roomId,
 }: Props) {
     return (
-        <View
-            style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-            }}
-        >
+        <View style={[StyleSheet.absoluteFill, styles.container]}>
             <Text style={{ color: 'white' }}>
                 {`Waiting to other players...\n\nRoom ID: ${roomId}\nUser ID: ${userId}`}
             </Text>
             {shouldShowReadyButton && (
-                <TouchableOpacity onPress={sendReadyMessage}>
-                    <Text style={{ color: 'white' }}>Ready</Text>
-                </TouchableOpacity>
+                <Button onPress={sendReadyMessage} title={'Ready'} />
             )}
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+})
