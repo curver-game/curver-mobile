@@ -1,20 +1,26 @@
 import { Canvas, Rect, Selector } from '@shopify/react-native-skia'
 import { View, StyleSheet } from 'react-native'
-import { useGameArea } from '../utils/gameArea'
+import {
+    transformGameSpacePositionToScreenSpacePosition,
+    useGameArea,
+    useGameAreaScaleFactor,
+} from '../utils/gameArea'
 import { useCallback, useEffect } from 'react'
-import { useGame } from '../utils/useGame'
 import { GameState, UUID } from '../types'
 import {
     GAME_AREA_BORDER_WIDTH,
     LINE_STROKE_WIDTH,
+    PLAYER_COLORS,
     PLAYER_SIZE,
 } from '../utils/constants'
 import { GestureDetector } from 'react-native-gesture-handler'
 import { useChangeDirectionGesture } from '../utils/useChangeDirectionGesture'
-import { PlayerTrail } from './PlayerTrail'
 import { Player } from './Player'
-
-const possibleColors = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta']
+import { useServerGameState } from '../utils/serverGameState'
+import {
+    convertUnitVectorToDegrees,
+    convertUnitVectorToRadians,
+} from '../utils/geometry'
 
 type Props = {
     userId: UUID
@@ -23,11 +29,12 @@ type Props = {
 
 export function GameCanvas({ gameState }: Props) {
     const { width: gameAreaWidth, height: gameAreaHeight } = useGameArea()
+    const gameAreaScaleFactor = useGameAreaScaleFactor()
 
     const { gesture, sendDirectionChangeToServerIfNeeded } =
         useChangeDirectionGesture()
 
-    const { playerIds, playerPathStrings, playerRotations, players } = useGame()
+    const { playerIds, players } = useServerGameState()
 
     const uiLoop = useCallback(() => {
         requestAnimationFrame(uiLoop)
@@ -42,41 +49,61 @@ export function GameCanvas({ gameState }: Props) {
         requestAnimationFrame(uiLoop)
     }, [uiLoop])
 
-    const renderPlayerPaths = useCallback(() => {
-        return playerIds.map((playerId, index) => {
-            const pathString = Selector(playerPathStrings, (p) => p[playerId])
-
-            const color = possibleColors[index % possibleColors.length]
-
-            return <PlayerTrail index={index} path={pathString} color={color} />
-        })
-    }, [playerIds, playerPathStrings])
-
     const renderPlayers = useCallback(() => {
         return playerIds.map((id, index) => {
-            const playerPosition = Selector(players, (p) => ({
-                x: p[id].x - (PLAYER_SIZE / 2 - LINE_STROKE_WIDTH / 2),
-                y: p[id].y - PLAYER_SIZE / 2,
-            }))
+            const positionX = Selector(players, (p) =>
+                p[id]
+                    ? transformGameSpacePositionToScreenSpacePosition(
+                          p[id],
+                          gameAreaScaleFactor
+                      ).x -
+                      (PLAYER_SIZE - LINE_STROKE_WIDTH) / 2
+                    : 0
+            )
 
-            const playerRotationOrigin = Selector(players, (p) => ({
-                x: p[id].x,
-                y: p[id].y,
-            }))
+            const positionY = Selector(players, (p) =>
+                p[id]
+                    ? transformGameSpacePositionToScreenSpacePosition(
+                          p[id],
+                          gameAreaScaleFactor
+                      ).y -
+                      (PLAYER_SIZE - LINE_STROKE_WIDTH) / 2
+                    : 0
+            )
 
-            const playerRotation = Selector(playerRotations, (p) => p[id])
+            const origin = Selector(players, (p) =>
+                p[id]
+                    ? transformGameSpacePositionToScreenSpacePosition(
+                          p[id],
+                          gameAreaScaleFactor
+                      )
+                    : { x: 0, y: 0 }
+            )
+
+            const transform = Selector(players, (p) => [
+                {
+                    rotate: p[id]
+                        ? convertUnitVectorToRadians({
+                              x: p[id].angleUnitVectorX,
+                              y: p[id].angleUnitVectorY,
+                          }) +
+                          Math.PI / 2
+                        : 0,
+                },
+            ])
 
             return (
                 <Player
-                    index={index}
-                    position={playerPosition}
-                    rotation={playerRotation}
-                    color={possibleColors[index % possibleColors.length]}
-                    origin={playerRotationOrigin}
+                    key={`player_${index}`}
+                    x={positionX}
+                    y={positionY}
+                    origin={origin}
+                    color={PLAYER_COLORS[index % PLAYER_COLORS.length]}
+                    transform={transform}
                 />
             )
         })
-    }, [])
+    }, [gameAreaScaleFactor, playerIds, players])
 
     return (
         <GestureDetector gesture={gesture}>
@@ -97,8 +124,6 @@ export function GameCanvas({ gameState }: Props) {
                         style={'stroke'}
                         strokeWidth={GAME_AREA_BORDER_WIDTH}
                     />
-
-                    {renderPlayerPaths()}
                     {renderPlayers()}
                 </Canvas>
             </View>

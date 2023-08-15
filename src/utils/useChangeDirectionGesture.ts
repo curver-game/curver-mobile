@@ -33,8 +33,6 @@ export function useChangeDirectionGesture() {
 
         const delta = convertRadiansToUnitVector(userAngleRadians.current)
 
-        console.log('sending direction update')
-
         gameWebsocket.sendMessage({
             type: 'rotate',
             angleUnitVectorX: delta.x,

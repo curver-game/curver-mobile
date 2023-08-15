@@ -1,5 +1,9 @@
 import { useSafeAreaFrame } from 'react-native-safe-area-context'
-import { GAME_AREA_SCALE_FACTOR, GAME_SPACE_ASPECT_RATIO } from './constants'
+import {
+    GAME_AREA_SCALE_FACTOR,
+    GAME_SPACE_ASPECT_RATIO,
+    GAME_SPACE_WIDTH,
+} from './constants'
 
 export type Dimension = {
     width: number
@@ -11,7 +15,7 @@ export type Position = {
     y: number
 }
 
-export function transformGameSpaceToScreenSpace(
+export function transformGameSpacePositionToScreenSpacePosition(
     position: Position,
     gameAreaScaleFactor: number
 ): Position {
@@ -21,7 +25,7 @@ export function transformGameSpaceToScreenSpace(
     }
 }
 
-export function transformScreenSpaceToGameSpace(
+export function transformScreenSpacePositionToGameSpacePosition(
     position: Position,
     gameAreaScaleFactor: number
 ): Position {
@@ -32,10 +36,9 @@ export function transformScreenSpaceToGameSpace(
 }
 
 export function useGameAreaScaleFactor(): number {
-    const { width: screenWidth } = useSafeAreaFrame()
     const { width: gameAreaWidth } = useGameArea()
 
-    return screenWidth / gameAreaWidth
+    return gameAreaWidth / GAME_SPACE_WIDTH
 }
 
 export function useGameArea(): Dimension {
