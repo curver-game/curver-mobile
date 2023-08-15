@@ -29,19 +29,18 @@ export function GameCanvas({ gameState }: Props) {
 
     const { playerIds, playerPathStrings, playerRotations, players } = useGame()
 
-    const uiLoop = () => {
+    const uiLoop = useCallback(() => {
         requestAnimationFrame(uiLoop)
-
         if (gameState === 'waiting') {
             return
         }
 
         sendDirectionChangeToServerIfNeeded()
-    }
+    }, [gameState, sendDirectionChangeToServerIfNeeded])
 
     useEffect(() => {
         requestAnimationFrame(uiLoop)
-    }, [])
+    }, [uiLoop])
 
     const renderPlayerPaths = useCallback(() => {
         return playerIds.map((playerId, index) => {
