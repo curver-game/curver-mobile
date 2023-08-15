@@ -8,6 +8,7 @@ import { GestureDetector } from 'react-native-gesture-handler'
 import { useChangeDirectionGesture } from '../utils/useChangeDirectionGesture'
 import { Player } from './Player'
 import { useServerGameState } from '../utils/serverGameState'
+import { PlayerTrail } from './PlayerTrail'
 
 type Props = {
     userId: UUID
@@ -21,7 +22,7 @@ export function GameCanvas({ gameState }: Props) {
     const { gesture, sendDirectionChangeToServerIfNeeded } =
         useChangeDirectionGesture()
 
-    const { playerIds, players } = useServerGameState()
+    const { playerIds, players, paths } = useServerGameState()
 
     const uiLoop = useCallback(() => {
         requestAnimationFrame(uiLoop)
@@ -35,6 +36,20 @@ export function GameCanvas({ gameState }: Props) {
     useEffect(() => {
         requestAnimationFrame(uiLoop)
     }, [uiLoop])
+
+    const renderPaths = useCallback(() => {
+        return playerIds.map((id, index) => {
+            return (
+                <PlayerTrail
+                    key={`trail_${index}`}
+                    paths={paths}
+                    playerIndex={index}
+                    playerId={id}
+                    gameAreaScaleFactor={gameAreaScaleFactor}
+                />
+            )
+        })
+    }, [gameAreaScaleFactor, paths, playerIds])
 
     const renderPlayers = useCallback(() => {
         return playerIds.map((id, index) => {
@@ -69,6 +84,7 @@ export function GameCanvas({ gameState }: Props) {
                         style={'stroke'}
                         strokeWidth={GAME_AREA_BORDER_WIDTH}
                     />
+                    {renderPaths()}
                     {renderPlayers()}
                 </Canvas>
             </View>
