@@ -24,10 +24,17 @@ export function HomeScreen() {
         navigation.navigate('Game', { roomId: res.roomId, userId: res.userId })
     }
 
-    const joinRoom = async () => {
+    const pasteAndJoinGame = async () => {
+        const roomIdFromClipboard = await Clipboard.getStringAsync()
+
+        setRoomId(roomIdFromClipboard)
+        joinRoom(roomIdFromClipboard)
+    }
+
+    const joinRoom = async (id: UUID) => {
         const res = await gameWebsocket.sendMessageAndWaitForResponse({
             type: 'joinRoom',
-            roomId,
+            roomId: id,
         })
 
         console.log(res)
@@ -40,6 +47,10 @@ export function HomeScreen() {
         navigation.navigate('Game', { roomId: res.roomId, userId: res.userId })
     }
 
+    const onPressJoinRoom = () => {
+        joinRoom(roomId)
+    }
+
     return (
         <View style={styles.container}>
             <Button onPress={createRoom} title="Create a new game" />
@@ -47,13 +58,14 @@ export function HomeScreen() {
                 style={styles.roomIdInput}
                 placeholder="Room ID"
                 onChangeText={setRoomId}
-                onSubmitEditing={joinRoom}
+                onSubmitEditing={onPressJoinRoom}
             />
             <Button
-                onPress={joinRoom}
+                onPress={onPressJoinRoom}
                 title="Join game"
                 disabled={roomId.trim().length === 0}
             />
+            <Button title={'Paste and join game'} onPress={pasteAndJoinGame} />
         </View>
     )
 }
