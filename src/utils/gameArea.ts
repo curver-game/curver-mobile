@@ -15,7 +15,10 @@ export type Position = {
     y: number
 }
 
-export function transformGameSpacePositionToScreenSpacePosition(
+/**
+ * Game space to screen space
+ */
+export function gmToSc(
     position: Position,
     gameAreaScaleFactor: number
 ): Position {
@@ -25,7 +28,10 @@ export function transformGameSpacePositionToScreenSpacePosition(
     }
 }
 
-export function transformScreenSpacePositionToGameSpacePosition(
+/**
+ * Screen space to game space
+ */
+export function scToGm(
     position: Position,
     gameAreaScaleFactor: number
 ): Position {

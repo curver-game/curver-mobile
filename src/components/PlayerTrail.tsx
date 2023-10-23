@@ -6,10 +6,7 @@ import {
     SkiaMutableValue,
 } from '@shopify/react-native-skia'
 import { LINE_STROKE_WIDTH, PLAYER_COLORS } from '../utils/constants'
-import {
-    Position,
-    transformGameSpacePositionToScreenSpacePosition,
-} from '../utils/gameArea'
+import { Position, gmToSc } from '../utils/gameArea'
 import { UUID } from '../types'
 
 type Props = {
@@ -33,26 +30,10 @@ export function PlayerTrail({
             ? p[playerId].reduce(
                   (acc, currentPosition) =>
                       `${acc} L ${
-                          transformGameSpacePositionToScreenSpacePosition(
-                              currentPosition,
-                              gameAreaScaleFactor
-                          ).x
-                      } ${
-                          transformGameSpacePositionToScreenSpacePosition(
-                              currentPosition,
-                              gameAreaScaleFactor
-                          ).y
-                      }`,
-                  `M ${
-                      transformGameSpacePositionToScreenSpacePosition(
-                          p[playerId][0],
-                          gameAreaScaleFactor
-                      ).x
-                  } ${
-                      transformGameSpacePositionToScreenSpacePosition(
-                          p[playerId][0],
-                          gameAreaScaleFactor
-                      ).y
+                          gmToSc(currentPosition, gameAreaScaleFactor).x
+                      } ${gmToSc(currentPosition, gameAreaScaleFactor).y}`,
+                  `M ${gmToSc(p[playerId][0], gameAreaScaleFactor).x} ${
+                      gmToSc(p[playerId][0], gameAreaScaleFactor).y
                   }`
               )
             : ''

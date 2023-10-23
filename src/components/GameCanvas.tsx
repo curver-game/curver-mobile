@@ -99,7 +99,5 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    canvas: {
-        backgroundColor: '#121f33',
-    },
+    canvas: {},
 })

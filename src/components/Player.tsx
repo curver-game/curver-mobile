@@ -5,7 +5,7 @@ import {
 } from '@shopify/react-native-skia'
 import { PLAYER_SVG } from '../utils/drawing'
 import { Player as PlayerType, UUID } from '../types'
-import { transformGameSpacePositionToScreenSpacePosition } from '../utils/gameArea'
+import { gmToSc } from '../utils/gameArea'
 import {
     LINE_STROKE_WIDTH,
     PLAYER_COLORS,
@@ -29,33 +29,21 @@ export function Player({
     playerIndex,
     gameAreaScaleFactor,
 }: Props) {
-    const y = Selector(players, (p) =>
+    const x = Selector(players, (p) =>
         p[playerId]
-            ? transformGameSpacePositionToScreenSpacePosition(
-                  p[playerId],
-                  gameAreaScaleFactor
-              ).x -
+            ? gmToSc(p[playerId], gameAreaScaleFactor).x -
               (PLAYER_SIZE - LINE_STROKE_WIDTH) / 2
             : 0
     )
 
-    const x = Selector(players, (p) =>
+    const y = Selector(players, (p) =>
         p[playerId]
-            ? transformGameSpacePositionToScreenSpacePosition(
-                  p[playerId],
-                  gameAreaScaleFactor
-              ).y -
-              (PLAYER_SIZE - LINE_STROKE_WIDTH) / 2
+            ? gmToSc(p[playerId], gameAreaScaleFactor).y - PLAYER_SIZE / 2
             : 0
     )
 
     const origin = Selector(players, (p) =>
-        p[playerId]
-            ? transformGameSpacePositionToScreenSpacePosition(
-                  p[playerId],
-                  gameAreaScaleFactor
-              )
-            : { x: 0, y: 0 }
+        p[playerId] ? gmToSc(p[playerId], gameAreaScaleFactor) : { x: 0, y: 0 }
     )
 
     const transform = Selector(players, (p) => [
@@ -65,7 +53,7 @@ export function Player({
                       x: p[playerId].angleUnitVectorX,
                       y: p[playerId].angleUnitVectorY,
                   }) +
-                  Math.PI / 2
+                  Math.PI / 2 // The player SVG is pointing up, but we want it to point right for cartesian coordinates.
                 : 0,
         },
     ])
@@ -73,8 +61,8 @@ export function Player({
     return (
         <ImageSVG
             svg={PLAYER_SVG}
-            x={y}
-            y={x}
+            x={x}
+            y={y}
             width={PLAYER_SIZE}
             height={PLAYER_SIZE}
             origin={origin}
