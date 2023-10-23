@@ -1,5 +1,5 @@
 import { useValue, useValueEffect } from '@shopify/react-native-skia'
-import { Player, UUID } from '../types'
+import { Path, Player, UUID } from '../types'
 import { useState } from 'react'
 import { useListenToSpecificMessage } from './messageListener'
 import { Position } from './gameArea'
@@ -28,6 +28,14 @@ export function useServerGameState() {
         'update'
     )
 
+    useListenToSpecificMessage(
+        (message) => {
+            paths.current = extractPaths(message.paths)
+        },
+        [paths],
+        'syncPaths'
+    )
+
     useValueEffect(players, () => {
         setPlayerIds(Object.keys(players.current))
     })
@@ -52,6 +60,16 @@ function updatePlayerPaths(
             ...(newPaths[player.id] || []),
             { x: player.x, y: player.y },
         ]
+    })
+
+    return newPaths
+}
+
+function extractPaths(paths: Record<string, Path>): Record<string, Position[]> {
+    const newPaths: Record<string, Position[]> = {}
+
+    Object.entries(paths).forEach(([playerId, path]) => {
+        newPaths[playerId] = path.nodes.map(([x, y]) => ({ x, y }))
     })
 
     return newPaths

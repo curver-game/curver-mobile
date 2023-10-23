@@ -1,5 +1,4 @@
-import { Path } from 'react-native-redash'
-import { UUID } from '..'
+import { Path, UUID } from '..'
 import { GameState } from '../GameState'
 import { Player } from '../Player'
 import { GameOutcome } from '../GameOutcome'
