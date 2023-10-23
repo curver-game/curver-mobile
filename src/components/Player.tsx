@@ -31,8 +31,7 @@ export function Player({
 }: Props) {
     const x = Selector(players, (p) =>
         p[playerId]
-            ? gmToSc(p[playerId], gameAreaScaleFactor).x -
-              (PLAYER_SIZE - LINE_STROKE_WIDTH) / 2
+            ? gmToSc(p[playerId], gameAreaScaleFactor).x - PLAYER_SIZE / 2
             : 0
     )
 
@@ -42,9 +41,16 @@ export function Player({
             : 0
     )
 
-    const origin = Selector(players, (p) =>
-        p[playerId] ? gmToSc(p[playerId], gameAreaScaleFactor) : { x: 0, y: 0 }
-    )
+    const origin = Selector(players, (p) => {
+        const originUntransformed = p[playerId]
+            ? gmToSc(p[playerId], gameAreaScaleFactor)
+            : { x: 0, y: 0 }
+
+        return {
+            x: originUntransformed.x,
+            y: originUntransformed.y,
+        }
+    })
 
     const transform = Selector(players, (p) => [
         {

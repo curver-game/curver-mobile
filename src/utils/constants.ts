@@ -9,7 +9,7 @@ export const DELTA_POS_PER_SECOND = 10
 export const DELTA_POS_PER_TiCK = DELTA_POS_PER_SECOND / TICK_RATE
 
 export const LINE_STROKE_WIDTH = 5
-export const PLAYER_SIZE = 20
+export const PLAYER_SIZE = 14
 
 export const PLAYER_COLORS = [
     'red',

@@ -41,7 +41,8 @@ export function GameCanvas({ gameState }: Props) {
 
             const deltaT = time - lastEventTime // in milliseconds
 
-            if (deltaT < 100) {
+            if (deltaT < 20) {
+                // The higher this number, the less often the server is updated
                 return
             }
 
