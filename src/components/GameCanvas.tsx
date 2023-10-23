@@ -24,18 +24,37 @@ export function GameCanvas({ gameState }: Props) {
 
     const { playerIds, players, paths } = useServerGameState()
 
-    const uiLoop = useCallback(() => {
-        requestAnimationFrame(uiLoop)
-        if (gameState === 'waiting') {
-            return
+    useEffect(() => {
+        let killUiLoop = false
+        let lastEventTime = 0
+
+        const uiLoop = (time: number) => {
+            if (killUiLoop) {
+                return
+            }
+
+            requestAnimationFrame(uiLoop)
+
+            if (gameState === 'waiting') {
+                return
+            }
+
+            const deltaT = time - lastEventTime // in milliseconds
+
+            if (deltaT < 100) {
+                return
+            }
+
+            sendDirectionChangeToServerIfNeeded()
+            lastEventTime = time
         }
 
-        sendDirectionChangeToServerIfNeeded()
-    }, [gameState, sendDirectionChangeToServerIfNeeded])
-
-    useEffect(() => {
         requestAnimationFrame(uiLoop)
-    }, [uiLoop])
+
+        return () => {
+            killUiLoop = true
+        }
+    }, [gameState, sendDirectionChangeToServerIfNeeded])
 
     const renderPaths = useCallback(() => {
         return playerIds.map((id, index) => {

@@ -6,7 +6,7 @@ import { gameWebsocket } from '../api/websocket'
 
 export function useChangeDirectionGesture() {
     const directionHeld = useRef<'right' | 'left' | null>(null)
-    const userAngleRadians = useRef(0)
+    const userAngleRadians = useRef(0) // TODO: Get the initial value from server and keep having it from server
 
     const { width: screenWidth } = useSafeAreaFrame()
 
@@ -27,7 +27,7 @@ export function useChangeDirectionGesture() {
             return
         }
 
-        userAngleRadians.current = degreesToRadians(
+        userAngleRadians.current += degreesToRadians(
             (directionHeld.current === 'right' ? 1 : -1) * 5
         )
 
