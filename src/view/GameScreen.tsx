@@ -29,6 +29,8 @@ export function GameScreen() {
         'update'
     )
 
+    useListenToSpecificMessageType((message) => {}, [], 'gameEnded')
+
     return (
         <View style={styles.container}>
             <GameCanvas userId={userId} gameState={gameState} />

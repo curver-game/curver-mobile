@@ -2,6 +2,7 @@ import { Path, UUID } from '..'
 import { GameState } from '../GameState'
 import { Player } from '../Player'
 import { GameOutcome } from '../GameOutcome'
+import { ScoreBoard } from '../ScoreBoard'
 
 export type CreatedRoomMessage = {
     type: 'createdRoom'
@@ -42,6 +43,7 @@ export type SyncPathsMessage = {
 export type GameEndedMessage = {
     type: 'gameEnded'
     outcome: GameOutcome
+    scoreBoard: ScoreBoard
 }
 
 export type UserEliminatedMessage = {
