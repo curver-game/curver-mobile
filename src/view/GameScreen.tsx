@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { GameState } from '../types'
 import { RouteProp, useRoute } from '@react-navigation/native'
@@ -6,9 +6,13 @@ import { RootStackProps } from '../navigation'
 import { WaitingOverlay } from '../components'
 import { GameCanvas } from '../components/GameCanvas'
 import { useListenToSpecificMessage as useListenToSpecificMessageType } from '../utils/messageListener'
+import { ScoreBoard as ScoreBoardType } from '../types/ScoreBoard'
+import { ScoreBoard } from './ScoreBoard'
 
 export function GameScreen() {
     const [gameState, setGameState] = useState<GameState>('waiting')
+    const [scoreBoard, setScoreBoard] = useState<null | ScoreBoardType>(null)
+
     const [shouldShowReadyButton, setShouldShowReadyButton] = useState(false)
 
     const {
@@ -29,7 +33,17 @@ export function GameScreen() {
         'update'
     )
 
-    useListenToSpecificMessageType((message) => {}, [], 'gameEnded')
+    useListenToSpecificMessageType(
+        (message) => {
+            setScoreBoard(message.scoreBoard)
+        },
+        [],
+        'gameEnded'
+    )
+
+    function dismissScore() {
+        setScoreBoard(null)
+    }
 
     return (
         <View style={styles.container}>
@@ -42,6 +56,9 @@ export function GameScreen() {
                     userId={userId}
                 />
             )}
+            {scoreBoard && (
+                <ScoreBoard onDismiss={dismissScore} scoreBoard={scoreBoard} />
+            )}
         </View>
     )
 }
@@ -50,5 +67,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#121f33',
+        justifyContent: 'center',
     },
 })
